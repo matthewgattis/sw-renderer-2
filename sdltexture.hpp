@@ -26,6 +26,7 @@ public:
     unsigned char *getPixels() const;
     int getWidth() const;
     int getHeight() const;
+    void clear();
 
 private:
     SDL_Texture *sdl_texture_;

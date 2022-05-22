@@ -17,8 +17,9 @@ const std::vector<std::pair<int, int>> SDLWindow::default_resolution_list_ =
     std::pair<int, int>(2048, 1536)
 };
 
-SDLWindow::SDLWindow(const std::string &window_name)
-    : sdl_window_(nullptr)
+SDLWindow::SDLWindow(const std::string &window_title) :
+    sdl_window_(nullptr),
+    window_title_(window_title)
 {
     LOG_INFO << "Instance created." << std::endl;
 
@@ -58,7 +59,7 @@ SDLWindow::SDLWindow(const std::string &window_name)
     LOG_INFO << "Window height (" << default_resolution_list_[selection].second << ")" << std::endl;
 
     sdl_window_ = SDL_CreateWindow(
-        window_name.c_str(),
+        window_title.c_str(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         default_resolution_list_[selection].first,
@@ -86,5 +87,10 @@ SDL_Window *SDLWindow::get() const
 const std::pair<int, int> &SDLWindow::getDefaultResolution() const
 {
     return default_resolution_list_[resolution_selection_];
+}
+
+void SDLWindow::setWindowTitle(const std::string& window_title)
+{
+    SDL_SetWindowTitle(sdl_window_, (window_title_ + " " + window_title).c_str());
 }
 

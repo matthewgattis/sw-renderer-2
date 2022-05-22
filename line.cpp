@@ -3,102 +3,136 @@
 #include <ios>
 #include <memory>
 
-#include "framebuffer.hpp"
-
-#define ABS(x) ( ((x) < 0) ? -(x) : (x) ) // absolute value
-
-Line::Line(
-    const std::shared_ptr<Framebuffer> &framebuffer)
-    : framebuffer_(framebuffer)
+Line::Iterator::Iterator() :
+	x_(),
+	y_(),
+	z_(),
+	p_(),
+	adxgady_(),
+	i1_(),
+	g_(),
+	i2_(),
+	dz_(),
+	coord_()
 {
 }
 
-void Line::draw(
-    const glm::dvec2 &p1,
-    const glm::dvec2 &p2,
-    const glm::dvec3 &c)
+Line::Iterator::Iterator(
+	int x,
+	int y,
+	double z,
+	bool p,
+	bool adxgady,
+	int i1,
+	int g,
+	int i2,
+	double dz) :
+	x_(x),
+	y_(y),
+	z_(z),
+	p_(p),
+	adxgady_(adxgady),
+	i1_(i1),
+	g_(g),
+	i2_(i2),
+	dz_(dz),
+	coord_(x, y, z)
 {
-  int dX, dY, row, col, final, G, inc1, inc2;
-  char pos_slope;
+}
 
-  dX = x2 - x1;
-  dY = y2 - y1;
-  pos_slope = (dX > 0);
-  if (dY < 0)
-    pos_slope = !pos_slope;
+Line::Iterator Line::Iterator::operator++()
+{
+	coord_ = Coord(x_, y_, z_);
+	if (adxgady_)
+	{
+		x_++;
+		if (g_ >= (p_ ? 0 : 1))
+		{
+			y_ += p_ ? 1 : -1;
+			g_ += i2_;
+		}
+		else
+			g_ += i1_;
+	}
+	else
+	{
+		y_++;
+		if (g_ >= (p_ ? 0 : 1))
+		{
+			x_ += p_ ? 1 : -1;
+			g_ += i2_;
+		}
+		else
+			g_ += i1_;
+	}
+	z_ += dz_;
+	return *this;
+}
 
-  if (ABS(dX) > ABS(dY)) {
-    if (dX > 0) {
-      col = x1;
-      row = y1;
-      final = x2;
-    } else {
-      col = x2;
-      row = y2;
-      final = x1;
-    }
+Line::Line(int x1, int y1, double z1, int x2, int y2, double z2)
+{
+	int dx = x2 - x1;
+	int dy = y2 - y1;
+	bool p = (dx > 0) != (dy < 0);
+	int adx = dx < 0 ? -dx : dx;
+	int ady = dy < 0 ? -dy : dy;
+	bool adxgady = adx > ady;
 
-    inc1 = 2 * ABS(dY);
-    G = inc1 - ABS(dX);
-    inc2 = 2 * (ABS(dY) - ABS(dX));
-    if (pos_slope) {
-      while (col <= final) {
-        dotproc(col, row);
-        col++;
-        if (G >= 0) {
-          row++;
-          G += inc2;
-        } else
-          G += inc1;
-      }
-    } else {
-      while (col <= final) {
-        dotproc(col, row);
-        col++;
-        if (G > 0) {
-          row--;
-          G += inc2;
-        } else
-          G += inc1;
-      }
-    }
-  } /* if |dX| > |dY| */
-  else {
-    if (dY > 0) {
-      col = x1;
-      row = y1;
-      final = y2;
-    } else {
-      col = x2;
-      row = y2;
-      final = y1;
-    }
+    int x;
+    int y;
+    double z;
+    int i1;
+    int g;
+    int i2;
+	double dz;
 
-    inc1 = 2 * ABS(dX);
-    G = inc1 - ABS(dY);
-    inc2 = 2 * (ABS(dX) - ABS(dY));
+	if (adxgady)
+	{
+		if (dx > 0)
+		{
+			x = x1;
+			y = y1;
+			z = z1;
+			dz = (z2 - z1) / adx;
+		}
+		else
+		{
+			x = x2;
+			y = y2;
+			z = z2;
+			x2 = x1;
+			y2 = y1;
+			dz = (z1 - z2) / adx;
+		}
+		i1 = 2 * ady;
+		g = i1 - adx;
+		i2 = 2 * (ady - adx);
+	}
+	else
+	{
+		if (dy > 0)
+		{
+			x = x1;
+			y = y1;
+			z = z1;
+			dz = (z2 - z1) / ady;
+		}
+		else
+		{
+			x = x2;
+			y = y2;
+			z = z2;
+			x2 = x1;
+			y2 = y1;
+			dz = (z1 - z2) / ady;
+		}
+		i1 = 2 * adx;
+		g = i1 - ady;
+		i2 = 2 * (adx - ady);
+	}
 
-    if (pos_slope) {
-      while (row <= final) {
-        dotproc(col, row);
-        row++;
-        if (G >= 0) {
-          col++;
-          G += inc2;
-        } else
-          G += inc1;
-      }
-    } else {
-      while (row <= final) {
-        dotproc(col, row);
-        row++;
-        if (G > 0) {
-          col--;
-          G += inc2;
-        } else
-          G += inc1;
-      }
-    }
-  }
+	begin_ = Iterator(x, y, z, p, adxgady, i1, g, i2, dz);
+	end_ = Iterator(x2, y2, z2, p, adxgady, i1, g, i2, dz);
+	end_++;
 }
 

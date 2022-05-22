@@ -71,3 +71,8 @@ int SDLTexture::getHeight() const
     return height_;
 }
 
+void SDLTexture::clear()
+{
+    memset(pixels_, 0, 4 * width_ * height_ * sizeof(char));
+}
+

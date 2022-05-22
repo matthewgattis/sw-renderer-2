@@ -5,6 +5,8 @@
 
 #include "app.hpp"
 
+#include "g_line.c"
+
 #define LOG_MODULE_NAME ("main")
 #include "log.hpp"
 
