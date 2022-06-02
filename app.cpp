@@ -105,8 +105,8 @@ void App::run(const std::vector<std::string> &args)
         auto ai = std::chrono::steady_clock::now();
         
         const glm::dmat4 viewport(
-            width / 2.2, 0.0, 0.0, 0.0,
-            0.0, height / 2.2, 0.0, 0.0,
+            width / 2.0, 0.0, 0.0, 0.0,
+            0.0, height / 2.0, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
             (width - 1) / 2.0, (height - 1) / 2.0, 0.0, 1.0);
 
