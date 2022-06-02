@@ -105,8 +105,8 @@ void App::run(const std::vector<std::string> &args)
         auto ai = std::chrono::steady_clock::now();
         
         const glm::dmat4 viewport(
-            width / 2.0, 0.0, 0.0, 0.0,
-            0.0, height / 2.0, 0.0, 0.0,
+            width / 2.2, 0.0, 0.0, 0.0,
+            0.0, height / 2.2, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
             (width - 1) / 2.0, (height - 1) / 2.0, 0.0, 1.0);
 
@@ -135,92 +135,102 @@ void App::run(const std::vector<std::string> &args)
         for (const auto index : indices)
             flat_vertices.push_back(clip_vertices[index]);
 
-        std::vector<int> clip_indicies;
-        clip_indicies.reserve(indices.size());
-        for (const auto i : indices)
-            clip_indicies.push_back(i);
-
         for (int i = 0; i < 6; i++)
         {
-            std::vector<int> next_indices;
-            next_indices.reserve(clip_indicies.size());
+            std::vector<glm::dvec4> next_vertices;
+            next_vertices.reserve(next_vertices.size());
 
             double sign = i < 3 ? -1.0 : 1.0;
             int component = i % 3;
-            int triangle_count = clip_indicies.size() / 3;
+            int triangle_count = clip_vertices.size() / 3;
 
             for (int j = 0; j < triangle_count; j++)
             {
                 int triangle = 3 * j;
                 std::vector<int> out;
                 std::vector<int> in;
-                std::vector<int> all;
                 for (int k = 0; k < 3; k++)
                 {
-                    int index = clip_indicies[triangle + k];
-                    const auto& vertex = clip_vertices[index];
-                    all.push_back(index);
-                    if (sign * vertex[component] > vertex.w)
+                    int index = triangle + k;
+                    const auto& v = clip_vertices[index];
+                    if (sign * v[component] > v.w)
                         out.push_back(index);
                     else
                         in.push_back(index);
                 }
+
                 if (in.size() > 0)
                 {
-                    if (in.size() == 1)
+                    const int in_count = in.size();
+                    if (in_count == 1)
                     {
                         const auto& a = clip_vertices[in[0]];
-                        auto& b = clip_vertices[out[0]];
-                        auto& c = clip_vertices[out[1]];
+                        const auto& b = clip_vertices[out[0]];
+                        const auto& c = clip_vertices[out[1]];
+                        glm::dvec4 d;
+                        glm::dvec4 e;
                         if (sign > 0.0)
                         {
-                            b = a + ((a.w - a[component]) / (a.w - b.w - a[component] + b[component])) * (b - a);
-                            c = a + ((a.w - a[component]) / (a.w - c.w - a[component] + c[component])) * (c - a);
+                            d = a + ((a.w - a[component]) / (a.w - b.w - a[component] + b[component])) * (b - a);
+                            e = a + ((a.w - a[component]) / (a.w - c.w - a[component] + c[component])) * (c - a);
                         }
                         else
                         {
-                            b = a + ((a.w + a[component]) / (a.w - b.w + a[component] - b[component])) * (b - a);
-                            c = a + ((a.w + a[component]) / (a.w - c.w + a[component] - c[component])) * (c - a);
+                            d = a + ((a.w + a[component]) / (a.w - b.w + a[component] - b[component])) * (b - a);
+                            e = a + ((a.w + a[component]) / (a.w - c.w + a[component] - c[component])) * (c - a);
                         }
+                        next_vertices.push_back(a);
+                        next_vertices.push_back(d);
+                        next_vertices.push_back(e);
                     }
-                    else if (in.size() == 2)
+                    else if (in_count == 2)
                     {
                         const auto& a = clip_vertices[in[0]];
                         const auto& b = clip_vertices[in[1]];
-                        auto& c = clip_vertices[out[0]];
+                        const auto& c = clip_vertices[out[0]];
                         glm::dvec4 d;
-                        if (sign > 0)
+                        glm::dvec4 e;
+                        if (sign > 0.0)
                         {
-							d = b + ((b.w - b[component]) / (b.w - c.w - b[component] + c[component])) * (c - b);
-							c = a + ((a.w - a[component]) / (a.w - c.w - a[component] + c[component])) * (c - a);
+                            d = a + ((a.w - a[component]) / (a.w - c.w - a[component] + c[component])) * (c - a);
+                            e = b + ((b.w - b[component]) / (b.w - c.w - b[component] + c[component])) * (c - b);
                         }
                         else
                         {
-                            d = b + ((b.w + b[component]) / (b.w - c.w + b[component] - c[component])) * (c - b);
-                            c = a + ((a.w + a[component]) / (a.w - c.w + a[component] - c[component])) * (c - a);
+                            d = a + ((a.w + a[component]) / (a.w - c.w + a[component] - c[component])) * (c - a);
+                            e = b + ((b.w + b[component]) / (b.w - c.w + b[component] - c[component])) * (c - b);
                         }
-                        next_indices.push_back(in[1]);
-                        next_indices.push_back(clip_vertices.size());
-                        clip_vertices.push_back(d);
-                        next_indices.push_back(out[0]);
+                        next_vertices.push_back(a);
+                        next_vertices.push_back(b);
+                        next_vertices.push_back(d);
+                        next_vertices.push_back(b);
+                        next_vertices.push_back(e);
+                        next_vertices.push_back(d);
                     }
-					for (const auto a : all)
-                        next_indices.push_back(a);
+                    else
+                    {
+                        const auto& a = clip_vertices[in[0]];
+                        const auto& b = clip_vertices[in[1]];
+                        const auto& c = clip_vertices[in[2]];
+                        next_vertices.push_back(a);
+                        next_vertices.push_back(b);
+                        next_vertices.push_back(c);
+                    }
                 }
             }
-            clip_indicies = next_indices;
+            clip_vertices = next_vertices;
         }
 
         for (auto& clip_vertex : clip_vertices)
             clip_vertex = viewport * (clip_vertex / clip_vertex.w);
 
-        int triangle_count = clip_indicies.size() / 3;
+        int triangle_count = clip_vertices.size() / 3;
         for (int i = 0; i < triangle_count; i++)
         {
             int index = 3 * i;
-            const auto& a = clip_vertices[clip_indicies[index]];
-            const auto& b = clip_vertices[clip_indicies[index + 1]];
-            const auto& c = clip_vertices[clip_indicies[index + 2]];
+            const auto& a = clip_vertices[index + 0];
+            const auto& b = clip_vertices[index + 1];
+            const auto& c = clip_vertices[index + 2];
             triangle2(
                 a,
                 b,
@@ -233,9 +243,14 @@ void App::run(const std::vector<std::string> &args)
                     {
                         y = height - 1 - y;
                         int idx = 4 * (x + y * width);
+                        /*
                         pixels[idx + 1] = ((i + 0) % 3) == 0 ? 255 : 0;
                         pixels[idx + 2] = ((i + 1) % 3) == 0 ? 255 : 0;
                         pixels[idx + 3] = ((i + 2) % 3) == 0 ? 255 : 0;
+                        */
+                        pixels[idx + 1] = 255;
+                        pixels[idx + 2] = 255;
+                        pixels[idx + 3] = 255;
                     }
                 });
         }
