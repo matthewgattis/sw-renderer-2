@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "camera.hpp"
+#include "mesh.hpp"
 #include "sdlwindow.hpp"
 #include "sdlrenderer.hpp"
 #include "sdltexture.hpp"
@@ -40,6 +41,19 @@ void inline triangle2(
         dotproc);
 }
 
+void xform(const glm::dmat3& m, std::vector<glm::dvec3> &ns)
+{
+    for (auto& n : ns)
+        n = m * n;
+    ns.push_back(glm::dvec3(0.0, 0.0, 0.0));
+}
+
+void xform(const glm::dmat4& m, std::vector<glm::dvec4>& vs)
+{
+    for (auto& v : vs)
+        v = m * v;
+}
+
 void App::run(const std::vector<std::string> &args)
 {
     init();
@@ -55,8 +69,120 @@ void App::run(const std::vector<std::string> &args)
 
     int mouse_button = 0;
 
+    const std::vector<double> arwing_vertices
+    {
+        -1.000000, 1.000000, -0.150000,
+        3.250000, -0.000000, 0.000000,
+        -1.000000, 0.000000, 1.000000,
+        -1.000000, 0.000000, -1.000000,
+        -1.500000, 0.500000, 0.000000,
+        0.000000, 0.500000, -0.100000,
+        1.179421, 0.000000, -0.500000,
+        1.179421, 0.000000, 0.500000,
+        0.089711, 0.000000, 0.750000,
+        0.089711, 0.000000, -0.750000,
+        -1.000000, 1.000000, 0.150000,
+        0.000000, 0.500000, 0.100000,
+        0.500000, -0.450000, 0.000000,
+
+        -1.000000, 0.000000, -1.000000,
+        -3.926414, 2.057791, -3.265626,
+        0.180935, -1.000000, -1.553861,
+        -1.122586, 0.558973, -1.796001,
+        -1.000000, 0.000000, 1.000000,
+        -3.926414, 2.057791, 3.265626,
+        0.180935, -1.000000, 1.553861,
+        -1.122586, 0.558973, 1.796001,
+
+        -1.000000, 0.000000, -1.000000,
+        -3.926414, -0.100000, -2.500000,
+        -6.006952, -0.250000, -4.962239,
+        -1.293253, 0.031070, -1.796001,
+        -1.000000, 0.000000, 1.000000,
+        -3.926414, -0.100000, 2.500000,
+        -6.006952, -0.250000, 4.962239,
+        -1.293253, 0.031070, 1.796001,
+
+        -1.000000, 1.000000, -0.150000,
+        -1.000000, 0.000000, 1.000000,
+        -1.000000, 0.000000, -1.000000,
+        -1.000000, 1.000000, 0.150000,
+    };
+
+    const std::vector<int> arwing_indices
+    {
+        6, 12, 2,
+		5, 1, 4,
+		5, 11, 1,
+		11, 5, 3,
+		11, 3, 12,
+		12, 1, 11,
+		6, 4, 1,
+		3, 9, 8,
+		3, 8, 2,
+		3, 2, 12,
+		12, 6, 1,
+		6, 2, 7,
+		6, 7, 10,
+		6, 10, 4,
+		4, 10, 7,
+		4, 7, 2,
+		4, 2, 13,
+		3, 13, 2,
+		3, 2, 8,
+		3, 8, 9,
+		4, 13, 3,
+
+		15, 17, 16,
+		15, 16, 14,
+		14, 16, 17,
+		14, 17, 15,
+		19, 20, 21,
+		19, 18, 20,
+		18, 21, 20,
+		18, 19, 21,
+
+		23, 25, 24,
+		23, 24, 22,
+		22, 24, 25,
+		22, 25, 23,
+		27, 28, 29,
+		27, 26, 28,
+		26, 29, 28,
+		26, 27, 29,
+
+		30, 32, 31,
+		30, 31, 33,
+    };
+
+    Mesh mesh;
+    {
+        int triangle_count = arwing_indices.size() / 3;
+        for (int i = 0; i < triangle_count; i++)
+        {
+            int index = 3 * i;
+            mesh.addTriangle(
+                mesh.addVertex(glm::dvec3(
+                    arwing_vertices[3 * (arwing_indices[index + 0] - 1) + 0],
+                    arwing_vertices[3 * (arwing_indices[index + 0] - 1) + 1],
+                    arwing_vertices[3 * (arwing_indices[index + 0] - 1) + 2])),
+                mesh.addVertex(glm::dvec3(
+                    arwing_vertices[3 * (arwing_indices[index + 1] - 1) + 0],
+                    arwing_vertices[3 * (arwing_indices[index + 1] - 1) + 1],
+                    arwing_vertices[3 * (arwing_indices[index + 1] - 1) + 2])),
+                mesh.addVertex(glm::dvec3(
+                    arwing_vertices[3 * (arwing_indices[index + 2] - 1) + 0],
+                    arwing_vertices[3 * (arwing_indices[index + 2] - 1) + 1],
+                    arwing_vertices[3 * (arwing_indices[index + 2] - 1) + 2])),
+                glm::dvec3(1.0, 1.0, 1.0));
+        }
+    }
+
 	constexpr double RAD = glm::pi<double>() / 180.0;
 	constexpr glm::dmat4 identity = glm::identity<glm::dmat4>();
+
+    std::vector<double> depth;
+    depth.resize(sdl_texture_->getWidth()* sdl_texture_->getHeight());
 
     while (run)
     {
@@ -87,11 +213,15 @@ void App::run(const std::vector<std::string> &args)
                 break;
             case SDL_WINDOWEVENT:
                 if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+                {
                     sdl_texture_ = std::make_shared<SDLTexture>(
                         sdl_renderer_,
                         SDL_TEXTUREACCESS_STREAMING,
                         e.window.data1,
                         e.window.data2);
+                    depth.resize(sdl_texture_->getWidth() * sdl_texture_->getHeight());
+                }
+                break;
             default:
                 break;
             }
@@ -107,150 +237,51 @@ void App::run(const std::vector<std::string> &args)
         const glm::dmat4 viewport(
             width / 2.0, 0.0, 0.0, 0.0,
             0.0, height / 2.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 10.0, 0.0,
             (width - 1) / 2.0, (height - 1) / 2.0, 0.0, 1.0);
-
         const glm::dmat4 projection =
-            glm::perspective(27.0 * RAD, (double)width / (double)height, 0.1, 100.0);
+            glm::perspective(27.0 * RAD, (double)width / (double)height, 0.1, 400.0);
 
-        std::vector<glm::dvec4> vertices;
-        vertices.reserve(3);
-        vertices.push_back(glm::dvec4(1.0, 0.0, 0.0, 1.0));
-        vertices.push_back(glm::dvec4(cos(120.0 * RAD), -sin(120.0 * RAD), 0.0, 1.0));
-        vertices.push_back(glm::dvec4(cos(120.0 * RAD), sin(120.0 * RAD), 0.0, 1.0));
-        std::vector<int> indices;
-        indices.reserve(3);
-        indices.push_back(0);
-        indices.push_back(1);
-        indices.push_back(2);
+        Mesh current = mesh;
+        current *= camera_->get();
+        current.clip(projection, viewport);
 
-        auto view_projection = projection * camera_->get();
-        std::vector<glm::dvec4> clip_vertices;
-        clip_vertices.reserve(vertices.size());
-        for (auto& v : vertices)
-            clip_vertices.push_back(view_projection * v);
+        for (auto& d : depth)
+            d = std::numeric_limits<double>::max();
 
-        std::vector<glm::dvec4> flat_vertices;
-        flat_vertices.reserve(indices.size());
-        for (const auto index : indices)
-            flat_vertices.push_back(clip_vertices[index]);
-
-        for (int i = 0; i < 6; i++)
-        {
-            std::vector<glm::dvec4> next_vertices;
-            next_vertices.reserve(next_vertices.size());
-
-            double sign = i < 3 ? -1.0 : 1.0;
-            int component = i % 3;
-            int triangle_count = clip_vertices.size() / 3;
-
-            for (int j = 0; j < triangle_count; j++)
-            {
-                int triangle = 3 * j;
-                std::vector<int> out;
-                std::vector<int> in;
-                for (int k = 0; k < 3; k++)
-                {
-                    int index = triangle + k;
-                    const auto& v = clip_vertices[index];
-                    if (sign * v[component] > v.w)
-                        out.push_back(index);
-                    else
-                        in.push_back(index);
-                }
-
-                if (in.size() > 0)
-                {
-                    const int in_count = in.size();
-                    if (in_count == 1)
-                    {
-                        const auto& a = clip_vertices[in[0]];
-                        const auto& b = clip_vertices[out[0]];
-                        const auto& c = clip_vertices[out[1]];
-                        glm::dvec4 d;
-                        glm::dvec4 e;
-                        if (sign > 0.0)
-                        {
-                            d = a + ((a.w - a[component]) / (a.w - b.w - a[component] + b[component])) * (b - a);
-                            e = a + ((a.w - a[component]) / (a.w - c.w - a[component] + c[component])) * (c - a);
-                        }
-                        else
-                        {
-                            d = a + ((a.w + a[component]) / (a.w - b.w + a[component] - b[component])) * (b - a);
-                            e = a + ((a.w + a[component]) / (a.w - c.w + a[component] - c[component])) * (c - a);
-                        }
-                        next_vertices.push_back(a);
-                        next_vertices.push_back(d);
-                        next_vertices.push_back(e);
-                    }
-                    else if (in_count == 2)
-                    {
-                        const auto& a = clip_vertices[in[0]];
-                        const auto& b = clip_vertices[in[1]];
-                        const auto& c = clip_vertices[out[0]];
-                        glm::dvec4 d;
-                        glm::dvec4 e;
-                        if (sign > 0.0)
-                        {
-                            d = a + ((a.w - a[component]) / (a.w - c.w - a[component] + c[component])) * (c - a);
-                            e = b + ((b.w - b[component]) / (b.w - c.w - b[component] + c[component])) * (c - b);
-                        }
-                        else
-                        {
-                            d = a + ((a.w + a[component]) / (a.w - c.w + a[component] - c[component])) * (c - a);
-                            e = b + ((b.w + b[component]) / (b.w - c.w + b[component] - c[component])) * (c - b);
-                        }
-                        next_vertices.push_back(a);
-                        next_vertices.push_back(b);
-                        next_vertices.push_back(d);
-                        next_vertices.push_back(b);
-                        next_vertices.push_back(e);
-                        next_vertices.push_back(d);
-                    }
-                    else
-                    {
-                        const auto& a = clip_vertices[in[0]];
-                        const auto& b = clip_vertices[in[1]];
-                        const auto& c = clip_vertices[in[2]];
-                        next_vertices.push_back(a);
-                        next_vertices.push_back(b);
-                        next_vertices.push_back(c);
-                    }
-                }
-            }
-            clip_vertices = next_vertices;
-        }
-
-        for (auto& clip_vertex : clip_vertices)
-            clip_vertex = viewport * (clip_vertex / clip_vertex.w);
-
-        int triangle_count = clip_vertices.size() / 3;
+        int triangle_count = current.getIndices().size() / 3;
         for (int i = 0; i < triangle_count; i++)
         {
-            int index = 3 * i;
-            const auto& a = clip_vertices[index + 0];
-            const auto& b = clip_vertices[index + 1];
-            const auto& c = clip_vertices[index + 2];
+            const int index = 3 * i;
+            const glm::dvec4& a = current.getVertices()[current.getIndices()[index + 0]];
+            const glm::dvec4& b = current.getVertices()[current.getIndices()[index + 1]];
+            const glm::dvec4& c = current.getVertices()[current.getIndices()[index + 2]];
+            const glm::dvec3& n = current.getNormals()[i];
             triangle2(
                 a,
                 b,
                 c,
-                [width, height, pixels, i](int x, int y, double z)
+                [width, height, pixels, i, &depth, &n](int x, int y, double z)
                 {
                     if (
                         x >= 0 && x < width &&
                         y >= 0 && y < height)
                     {
-                        y = height - 1 - y;
-                        int idx = 4 * (x + y * width);
-                        /*
-                        pixels[idx + 1] = ((i + 0) % 3) == 0 ? 255 : 0;
-                        pixels[idx + 2] = ((i + 1) % 3) == 0 ? 255 : 0;
-                        pixels[idx + 3] = ((i + 2) % 3) == 0 ? 255 : 0;
-                        */
-                        pixels[idx + 1] = 255;
-                        pixels[idx + 2] = 255;
-                        pixels[idx + 3] = 255;
+                        if (z <= depth[x + y * width])
+                        {
+                            depth[x + y * width] = z;
+                            y = height - 1 - y;
+                            int idx = 4 * (x + y * width);
+                            double l = glm::max(0.0, glm::dot(n, glm::dvec3(0.0, 0.0, 1.0)));
+                            /*
+                            pixels[idx + 1] = ((i + 0) % 3) == 0 ? 255 * l : 0;
+                            pixels[idx + 2] = ((i + 1) % 3) == 0 ? 255 * l : 0;
+                            pixels[idx + 3] = ((i + 2) % 3) == 0 ? 255 * l : 0;
+                            */
+                            pixels[idx + 1] = 255 * l;
+                            pixels[idx + 2] = 255 * l;
+                            pixels[idx + 3] = 255 * l;
+                        }
                     }
                 });
         }
@@ -290,6 +321,6 @@ void App::init()
         SDL_TEXTUREACCESS_STREAMING,
         sdl_window_->getDefaultResolution().first,
         sdl_window_->getDefaultResolution().second);
-    camera_ = std::make_shared<Camera>(10.0, 0.1, 100.0);
+    camera_ = std::make_shared<Camera>(50.0, 0.1, 400.0);
 }
 

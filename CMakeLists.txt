@@ -29,6 +29,7 @@ set(${PROJECT_NAME}_SOURCE
     ./app.cpp
     ./camera.cpp
     ./main.cpp
+    ./mesh.cpp
     ./sdlrenderer.cpp
     ./sdltexture.cpp
     ./sdlwindow.cpp
@@ -40,6 +41,7 @@ set(${PROJECT_NAME}_INCLUDE
     ./camera.hpp
     ./log.hpp
     ./framebuffer.hpp
+    ./mesh.hpp
     ./sdlrenderer.hpp
     ./sdltexture.hpp
     ./sdlwindow.hpp
