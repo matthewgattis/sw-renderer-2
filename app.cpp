@@ -272,7 +272,10 @@ void App::run(const std::vector<std::string> &args)
                             depth[x + y * width] = z;
                             y = height - 1 - y;
                             int idx = 4 * (x + y * width);
-                            double l = glm::max(0.0, glm::dot(n, glm::dvec3(0.0, 0.0, 1.0)));
+                            double l = glm::mix(
+                                0.2,
+                                1.0,
+                                glm::max(0.0, glm::dot(n, glm::dvec3(0.0, 0.0, 1.0))));
                             /*
                             pixels[idx + 1] = ((i + 0) % 3) == 0 ? 255 * l : 0;
                             pixels[idx + 2] = ((i + 1) % 3) == 0 ? 255 * l : 0;
