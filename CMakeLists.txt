@@ -28,6 +28,7 @@ find_package(SDL2 CONFIG REQUIRED)
 set(${PROJECT_NAME}_SOURCE
     ./app.cpp
     ./camera.cpp
+    ./gamecontroller.cpp
     ./main.cpp
     ./mesh.cpp
     ./sdlrenderer.cpp
@@ -39,6 +40,7 @@ set(${PROJECT_NAME}_SOURCE
 set(${PROJECT_NAME}_INCLUDE
     ./app.hpp
     ./camera.hpp
+    ./gamecontroller.hpp
     ./log.hpp
     ./framebuffer.hpp
     ./mesh.hpp
@@ -59,5 +61,10 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} PRIVATE
     PRIVATE glm::glm
     PRIVATE SDL2::SDL2 SDL2::SDL2main
+    )
+
+#message("$<TARGET_FILE_DIR:sw-renderer-2>")
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/gamecontrollerdb.txt" $<TARGET_FILE_DIR:${PROJECT_NAME}>
     )
 

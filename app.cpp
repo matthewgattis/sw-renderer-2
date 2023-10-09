@@ -7,6 +7,7 @@
 #include <SDL_render.h>
 #include <limits>
 #include <memory>
+#include <functional>
 
 #include "camera.hpp"
 #include "mesh.hpp"
@@ -14,6 +15,7 @@
 #include "sdlrenderer.hpp"
 #include "sdltexture.hpp"
 #include "triangle.hpp"
+#include "gamecontroller.hpp"
 
 #define LOG_MODULE_NAME ("App")
 #include "log.hpp"
@@ -184,6 +186,28 @@ void App::run(const std::vector<std::string> &args)
     std::vector<double> depth;
     depth.resize(sdl_texture_->getWidth()* sdl_texture_->getHeight());
 
+    {
+        int res = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
+        if (res == -1)
+        {
+            LOG_ERROR << "Failure in SDL_GameControllerAddMappingsFromFile. (" << SDL_GetError() << ")" << std::endl;
+            throw std::exception();
+        }
+    }
+    {
+        int res = SDL_NumJoysticks();
+        if (res < 0)
+        {
+            LOG_ERROR << "Failure in SDL_NumJoysticks. (" << SDL_GetError() << ")" << std::endl;
+            throw std::exception();
+        }
+        for (int i = 0; i < res; i++)
+            if (SDL_IsGameController(i) == SDL_TRUE)
+            {
+                game_controllers_.emplace(i, std::make_shared<GameController>(i));
+            }
+    }
+
     while (run)
     {
         int frame_start = SDL_GetTicks();
@@ -191,6 +215,9 @@ void App::run(const std::vector<std::string> &args)
         SDL_Event e;
         while (SDL_PollEvent(&e))
         {
+            for (auto& game_controller : game_controllers_)
+                game_controller.second->handleEvent(e);
+            
             switch (e.type)
             {
             case SDL_QUIT:
@@ -222,9 +249,52 @@ void App::run(const std::vector<std::string> &args)
                     depth.resize(sdl_texture_->getWidth() * sdl_texture_->getHeight());
                 }
                 break;
+            case SDL_CONTROLLERDEVICEADDED:
+                game_controllers_.emplace(e.cdevice.which, std::make_shared<GameController>(e.cdevice.which));
+                break;
+            case SDL_CONTROLLERDEVICEREMOVED:
+                game_controllers_.erase(e.cdevice.which);
+                break;
             default:
                 break;
             }
+        }
+
+        {
+            glm::dvec2 left_stick(0.0);
+            glm::dvec2 right_stick(0.0);
+            double pan_z = 0.0;
+
+            for (const auto& game_controller : game_controllers_)
+            {
+                const auto& a = game_controller.second;
+
+                double z =
+                    (a->getButton(SDL_CONTROLLER_BUTTON_A) ? 1.0 : 0.0) -
+                    (a->getButton(SDL_CONTROLLER_BUTTON_B) ? 1.0 : 0.0);
+                pan_z = glm::abs(z) > glm::abs(pan_z) ? z : pan_z;
+
+                glm::dvec2 l(0.0);
+				l.x = a->getAxis(SDL_CONTROLLER_AXIS_LEFTX);
+				l.y = a->getAxis(SDL_CONTROLLER_AXIS_LEFTY);
+                if (glm::length(l) > 0.1)
+                    left_stick += l;
+
+                glm::dvec2 r(0.0);
+				r.x = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTX);
+				r.y = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTY);
+                if (glm::length(r) > 0.1)
+                    right_stick += r;
+            }
+
+            if (glm::length(left_stick) > 1.0)
+                left_stick = glm::normalize(left_stick);
+            if (glm::length(right_stick) > 1.0)
+                right_stick = glm::normalize(right_stick);
+
+            camera_->rotate(right_stick.x * 8.0, right_stick.y * 8.0);
+            camera_->pan(-left_stick.x * 8.0, pan_z * 8.0);
+            camera_->zoom(-left_stick.y / 8.0);
         }
 
         sdl_texture_->clear();
@@ -311,7 +381,7 @@ void App::run(const std::vector<std::string> &args)
 void App::init()
 {
     int result;
-    result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER);
     if (result)
     {
         LOG_ERROR << "Failure in SDL_Init. (" << SDL_GetError() << ")" << std::endl;

@@ -4,11 +4,13 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class Camera;
 class SDLWindow;
 class SDLRenderer;
 class SDLTexture;
+class GameController;
 
 class App
 {
@@ -26,5 +28,6 @@ private:
     std::shared_ptr<SDLRenderer> sdl_renderer_;
     std::shared_ptr<SDLTexture> sdl_texture_;
     std::shared_ptr<Camera> camera_;
+    std::unordered_map<int, std::shared_ptr<GameController>> game_controllers_;
 };
 
