@@ -1,25 +1,12 @@
 cmake_minimum_required(VERSION 3.10.2)
 
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR};${CMAKE_MODULE_PATH};")
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-
-# Install vcpkg, if necessary. This must be done before calling the project command so that the 
-# toolchain file is found.
-set(VCPKG_ROOT "${CMAKE_BINARY_DIR}/vcpkg")
-set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
-include(cmake/vcpkg_dependencies.cmake)
-install_vcpkg(master)
 
 project(sw-renderer-2 VERSION 1.0.0)
 add_definitions(-D_USE_MATH_DEFINES)
 
-message("Platform toolset: ${VCPKG_PLATFORM_TOOLSET}")
-message("Target triplet: ${VCPKG_TARGET_TRIPLET}")
-
-set_vcpkg_dependencies(
-    glm
-    sdl2
-    )
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};${CMAKE_SOURCE_DIR})
 
 find_package(glm CONFIG REQUIRED)
