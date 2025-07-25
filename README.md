@@ -31,3 +31,8 @@ $ cmake -D CMAKE_BUILD_TYPE=Release ../
 $ cmake --build .
 ```
 
+### Controls
+- Right click and drag to rotate the camera.
+- Middle click and drag to pan the camera.
+- Scroll wheel to zoom in and out.
+
