@@ -48,6 +48,7 @@ set(${PROJECT_NAME}_INCLUDE
     ./sdltexture.hpp
     ./sdlwindow.hpp
     ./triangle.hpp
+    ./teapot.hpp
     )
 
 include_directories(${PROJECT_NAME}

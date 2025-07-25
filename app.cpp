@@ -16,6 +16,7 @@
 #include "sdltexture.hpp"
 #include "triangle.hpp"
 #include "gamecontroller.hpp"
+#include "teapot.hpp"
 
 #define LOG_MODULE_NAME ("App")
 #include "log.hpp"
@@ -63,125 +64,39 @@ void App::run(const std::vector<std::string> &args)
     bool run = true;
     int ellapsed = 0;
 
-	int mouse_x = 0;
-	int mouse_y = 0;
+    int mouse_x = 0;
+    int mouse_y = 0;
 
     int frame_delay = 1;
     int frame_count = 0;
 
     int mouse_button = 0;
 
-    const std::vector<double> arwing_vertices
-    {
-        -1.000000, 1.000000, -0.150000,
-        3.250000, -0.000000, 0.000000,
-        -1.000000, 0.000000, 1.000000,
-        -1.000000, 0.000000, -1.000000,
-        -1.500000, 0.500000, 0.000000,
-        0.000000, 0.500000, -0.100000,
-        1.179421, 0.000000, -0.500000,
-        1.179421, 0.000000, 0.500000,
-        0.089711, 0.000000, 0.750000,
-        0.089711, 0.000000, -0.750000,
-        -1.000000, 1.000000, 0.150000,
-        0.000000, 0.500000, 0.100000,
-        0.500000, -0.450000, 0.000000,
-
-        -1.000000, 0.000000, -1.000000,
-        -3.926414, 2.057791, -3.265626,
-        0.180935, -1.000000, -1.553861,
-        -1.122586, 0.558973, -1.796001,
-        -1.000000, 0.000000, 1.000000,
-        -3.926414, 2.057791, 3.265626,
-        0.180935, -1.000000, 1.553861,
-        -1.122586, 0.558973, 1.796001,
-
-        -1.000000, 0.000000, -1.000000,
-        -3.926414, -0.100000, -2.500000,
-        -6.006952, -0.250000, -4.962239,
-        -1.293253, 0.031070, -1.796001,
-        -1.000000, 0.000000, 1.000000,
-        -3.926414, -0.100000, 2.500000,
-        -6.006952, -0.250000, 4.962239,
-        -1.293253, 0.031070, 1.796001,
-
-        -1.000000, 1.000000, -0.150000,
-        -1.000000, 0.000000, 1.000000,
-        -1.000000, 0.000000, -1.000000,
-        -1.000000, 1.000000, 0.150000,
-    };
-
-    const std::vector<int> arwing_indices
-    {
-        6, 12, 2,
-		5, 1, 4,
-		5, 11, 1,
-		11, 5, 3,
-		11, 3, 12,
-		12, 1, 11,
-		6, 4, 1,
-		3, 9, 8,
-		3, 8, 2,
-		3, 2, 12,
-		12, 6, 1,
-		6, 2, 7,
-		6, 7, 10,
-		6, 10, 4,
-		4, 10, 7,
-		4, 7, 2,
-		4, 2, 13,
-		3, 13, 2,
-		3, 2, 8,
-		3, 8, 9,
-		4, 13, 3,
-
-		15, 17, 16,
-		15, 16, 14,
-		14, 16, 17,
-		14, 17, 15,
-		19, 20, 21,
-		19, 18, 20,
-		18, 21, 20,
-		18, 19, 21,
-
-		23, 25, 24,
-		23, 24, 22,
-		22, 24, 25,
-		22, 25, 23,
-		27, 28, 29,
-		27, 26, 28,
-		26, 29, 28,
-		26, 27, 29,
-
-		30, 32, 31,
-		30, 31, 33,
-    };
-
     Mesh mesh;
     {
-        int triangle_count = arwing_indices.size() / 3;
+        int triangle_count = teapot_indices.size() / 3;
         for (int i = 0; i < triangle_count; i++)
         {
             int index = 3 * i;
             mesh.addTriangle(
                 mesh.addVertex(glm::dvec3(
-                    arwing_vertices[3 * (arwing_indices[index + 0] - 1) + 0],
-                    arwing_vertices[3 * (arwing_indices[index + 0] - 1) + 1],
-                    arwing_vertices[3 * (arwing_indices[index + 0] - 1) + 2])),
+                    teapot_vertices[3 * (teapot_indices[index + 0]) + 0],
+                    teapot_vertices[3 * (teapot_indices[index + 0]) + 1],
+                    teapot_vertices[3 * (teapot_indices[index + 0]) + 2])),
                 mesh.addVertex(glm::dvec3(
-                    arwing_vertices[3 * (arwing_indices[index + 1] - 1) + 0],
-                    arwing_vertices[3 * (arwing_indices[index + 1] - 1) + 1],
-                    arwing_vertices[3 * (arwing_indices[index + 1] - 1) + 2])),
+                    teapot_vertices[3 * (teapot_indices[index + 1]) + 0],
+                    teapot_vertices[3 * (teapot_indices[index + 1]) + 1],
+                    teapot_vertices[3 * (teapot_indices[index + 1]) + 2])),
                 mesh.addVertex(glm::dvec3(
-                    arwing_vertices[3 * (arwing_indices[index + 2] - 1) + 0],
-                    arwing_vertices[3 * (arwing_indices[index + 2] - 1) + 1],
-                    arwing_vertices[3 * (arwing_indices[index + 2] - 1) + 2])),
+                    teapot_vertices[3 * (teapot_indices[index + 2]) + 0],
+                    teapot_vertices[3 * (teapot_indices[index + 2]) + 1],
+                    teapot_vertices[3 * (teapot_indices[index + 2]) + 2])),
                 glm::dvec3(1.0, 1.0, 1.0));
         }
     }
 
-	constexpr double RAD = glm::pi<double>() / 180.0;
-	constexpr glm::dmat4 identity = glm::identity<glm::dmat4>();
+    constexpr double RAD = glm::pi<double>() / 180.0;
+    constexpr glm::dmat4 identity = glm::identity<glm::dmat4>();
 
     std::vector<double> depth;
     depth.resize(sdl_texture_->getWidth()* sdl_texture_->getHeight());
@@ -217,7 +132,7 @@ void App::run(const std::vector<std::string> &args)
         {
             for (auto& game_controller : game_controllers_)
                 game_controller.second->handleEvent(e);
-            
+
             switch (e.type)
             {
             case SDL_QUIT:
@@ -275,14 +190,14 @@ void App::run(const std::vector<std::string> &args)
                 pan_z = glm::abs(z) > glm::abs(pan_z) ? z : pan_z;
 
                 glm::dvec2 l(0.0);
-				l.x = a->getAxis(SDL_CONTROLLER_AXIS_LEFTX);
-				l.y = a->getAxis(SDL_CONTROLLER_AXIS_LEFTY);
+                l.x = a->getAxis(SDL_CONTROLLER_AXIS_LEFTX);
+                l.y = a->getAxis(SDL_CONTROLLER_AXIS_LEFTY);
                 if (glm::length(l) > 0.1)
                     left_stick += l;
 
                 glm::dvec2 r(0.0);
-				r.x = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTX);
-				r.y = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTY);
+                r.x = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTX);
+                r.y = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTY);
                 if (glm::length(r) > 0.1)
                     right_stick += r;
             }
@@ -303,7 +218,7 @@ void App::run(const std::vector<std::string> &args)
         int height = sdl_texture_->getHeight();
         unsigned char* pixels = sdl_texture_->getPixels();
         auto ai = std::chrono::steady_clock::now();
-        
+
         const glm::dmat4 viewport(
             width / 2.0, 0.0, 0.0, 0.0,
             0.0, height / 2.0, 0.0, 0.0,
@@ -333,28 +248,23 @@ void App::run(const std::vector<std::string> &args)
                 c,
                 [width, height, pixels, i, &depth, &n](int x, int y, double z)
                 {
-                    if (
-                        x >= 0 && x < width &&
-                        y >= 0 && y < height)
+                    if (z <= depth[x + y * width])
                     {
-                        if (z <= depth[x + y * width])
-                        {
-                            depth[x + y * width] = z;
-                            y = height - 1 - y;
-                            int idx = 4 * (x + y * width);
-                            double l = glm::mix(
-                                0.2,
-                                1.0,
-                                glm::max(0.0, glm::dot(n, glm::dvec3(0.0, 0.0, 1.0))));
-                            /*
-                            pixels[idx + 1] = ((i + 0) % 3) == 0 ? 255 * l : 0;
-                            pixels[idx + 2] = ((i + 1) % 3) == 0 ? 255 * l : 0;
-                            pixels[idx + 3] = ((i + 2) % 3) == 0 ? 255 * l : 0;
-                            */
-                            pixels[idx + 1] = 255 * l;
-                            pixels[idx + 2] = 255 * l;
-                            pixels[idx + 3] = 255 * l;
-                        }
+                        depth[x + y * width] = z;
+                        y = height - 1 - y;
+                        int idx = 4 * (x + y * width);
+                        double l = glm::mix(
+                            0.2,
+                            1.0,
+                            glm::max(0.0, glm::dot(n, glm::dvec3(0.0, 0.0, 1.0))));
+                        /*
+                        pixels[idx + 1] = ((i + 0) % 3) == 0 ? 255 * l : 0;
+                        pixels[idx + 2] = ((i + 1) % 3) == 0 ? 255 * l : 0;
+                        pixels[idx + 3] = ((i + 2) % 3) == 0 ? 255 * l : 0;
+                        */
+                        pixels[idx + 1] = 255 * l;
+                        pixels[idx + 2] = 255 * l;
+                        pixels[idx + 3] = 255 * l;
                     }
                 });
         }
@@ -373,8 +283,10 @@ void App::run(const std::vector<std::string> &args)
 
         frame_count++;
 
+        /*
         sdl_window_->setWindowTitle(
             std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(bi - ai).count() / 1000.0));
+        */
     }
 }
 
@@ -394,6 +306,6 @@ void App::init()
         SDL_TEXTUREACCESS_STREAMING,
         sdl_window_->getDefaultResolution().first,
         sdl_window_->getDefaultResolution().second);
-    camera_ = std::make_shared<Camera>(50.0, 0.1, 400.0);
+    camera_ = std::make_shared<Camera>(20.0, 0.1, 400.0);
 }
 
