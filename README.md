@@ -3,6 +3,8 @@
 
 A simple, low dependency, software 3D rasterizer. As of right now, I have little intention of expanding the capabilities of this project. But may do so in the future.
 
+![](docs/sw-utah-teapot.png)
+
 This project was created primarily as a learning exercise.
 
 ## Getting started
