@@ -53,7 +53,10 @@ void Mesh::addTriangle(
 void Mesh::clip(const glm::dmat4& projection, const glm::dmat4& viewport)
 {
 	for (auto& v : this->vertices_)
+    {
 		v = projection * v;
+        v = v / v.w; // Perspective divide
+    }
 
 	Mesh other;
 	std::vector<Mesh*> meshes
@@ -175,6 +178,6 @@ void Mesh::clip(const glm::dmat4& projection, const glm::dmat4& viewport)
     }
 
 	for (auto& v : next_mesh->vertices_)
-		v = viewport * (v / v.w);
+		v = viewport * v;
 }
 
