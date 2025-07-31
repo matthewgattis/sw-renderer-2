@@ -1,6 +1,7 @@
 #include "sdlwindow.hpp"
 
 #include <SDL.h>
+#include <SDL_video.h>
 
 #define LOG_MODULE_NAME ("SDLWindow")
 #include "log.hpp"
@@ -53,8 +54,6 @@ SDLWindow::SDLWindow(const std::string &window_title) :
         break;
     }
 
-    resolution_selection_ = selection;
-
     LOG_INFO << "Window width (" << default_resolution_list_[selection].first << ")" << std::endl;
     LOG_INFO << "Window height (" << default_resolution_list_[selection].second << ")" << std::endl;
 
@@ -64,7 +63,7 @@ SDLWindow::SDLWindow(const std::string &window_title) :
         SDL_WINDOWPOS_CENTERED,
         default_resolution_list_[selection].first,
         default_resolution_list_[selection].second,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (!sdl_window_)
     {
@@ -77,20 +76,5 @@ SDLWindow::~SDLWindow()
 {
     if (sdl_window_)
         SDL_DestroyWindow(sdl_window_);
-}
-
-SDL_Window *SDLWindow::get() const
-{
-    return sdl_window_;
-}
-
-const std::pair<int, int> &SDLWindow::getDefaultResolution() const
-{
-    return default_resolution_list_[resolution_selection_];
-}
-
-void SDLWindow::setWindowTitle(const std::string& window_title)
-{
-    SDL_SetWindowTitle(sdl_window_, (window_title_ + " " + window_title).c_str());
 }
 

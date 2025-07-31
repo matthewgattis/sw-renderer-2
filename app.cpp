@@ -21,9 +21,55 @@
 #define LOG_MODULE_NAME ("App")
 #include "log.hpp"
 
-App::App()
+App::App() :
+    mouse_button_(0),
+    run_(true)
 {
     LOG_INFO << "Instance created." << std::endl;
+
+    int result;
+    result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER);
+    if (result)
+    {
+        LOG_ERROR << "Failure in SDL_Init. (" << SDL_GetError() << ")" << std::endl;
+        throw std::exception();
+    }
+
+    sdl_window_ = std::make_shared<SDLWindow>("sw-renderer");
+
+    sdl_renderer_ = std::make_shared<SDLRenderer>(sdl_window_);
+    auto [width, height] = sdl_renderer_->getResolution();
+
+    sdl_texture_ = std::make_shared<SDLTexture>(
+        sdl_renderer_,
+        width,
+        height);
+
+    camera_ = std::make_shared<Camera>(20.0, 0.1, 400.0);
+
+    {
+        int res = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
+        if (res == -1)
+        {
+            LOG_ERROR << "Failure in SDL_GameControllerAddMappingsFromFile. (" << SDL_GetError() << ")" << std::endl;
+            throw std::exception();
+        }
+    }
+    {
+        int res = SDL_NumJoysticks();
+        if (res < 0)
+        {
+            LOG_ERROR << "Failure in SDL_NumJoysticks. (" << SDL_GetError() << ")" << std::endl;
+            throw std::exception();
+        }
+        for (int i = 0; i < res; i++)
+            if (SDL_IsGameController(i) == SDL_TRUE)
+            {
+                game_controllers_.emplace(i, std::make_shared<GameController>(i));
+            }
+    }
+
+    depth_.resize(width * height);
 }
 
 App::~App()
@@ -59,18 +105,10 @@ void xform(const glm::dmat4& m, std::vector<glm::dvec4>& vs)
 
 void App::run(const std::vector<std::string> &args)
 {
-    init();
-
-    bool run = true;
     int ellapsed = 0;
-
-    int mouse_x = 0;
-    int mouse_y = 0;
 
     int frame_delay = 1;
     int frame_count = 0;
-
-    int mouse_button = 0;
 
     Mesh mesh;
     {
@@ -98,125 +136,16 @@ void App::run(const std::vector<std::string> &args)
     constexpr double RAD = glm::pi<double>() / 180.0;
     constexpr glm::dmat4 identity = glm::identity<glm::dmat4>();
 
-    std::vector<double> depth;
-    depth.resize(sdl_texture_->getWidth()* sdl_texture_->getHeight());
-
-    {
-        int res = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
-        if (res == -1)
-        {
-            LOG_ERROR << "Failure in SDL_GameControllerAddMappingsFromFile. (" << SDL_GetError() << ")" << std::endl;
-            throw std::exception();
-        }
-    }
-    {
-        int res = SDL_NumJoysticks();
-        if (res < 0)
-        {
-            LOG_ERROR << "Failure in SDL_NumJoysticks. (" << SDL_GetError() << ")" << std::endl;
-            throw std::exception();
-        }
-        for (int i = 0; i < res; i++)
-            if (SDL_IsGameController(i) == SDL_TRUE)
-            {
-                game_controllers_.emplace(i, std::make_shared<GameController>(i));
-            }
-    }
-
-    while (run)
+    while (run_)
     {
         int frame_start = SDL_GetTicks();
 
-        SDL_Event e;
-        while (SDL_PollEvent(&e))
-        {
-            for (auto& game_controller : game_controllers_)
-                game_controller.second->handleEvent(e);
-
-            switch (e.type)
-            {
-            case SDL_QUIT:
-                run = false;
-                break;
-            case SDL_MOUSEBUTTONDOWN:
-                mouse_button = e.button.button;
-                break;
-            case SDL_MOUSEBUTTONUP:
-                mouse_button = 0;
-                break;
-            case SDL_MOUSEMOTION:
-                if (mouse_button == 3)
-                    camera_->rotate(e.motion.xrel, e.motion.yrel);
-                else if (mouse_button == 2)
-                    camera_->pan(e.motion.xrel, e.motion.yrel);
-                break;
-            case SDL_MOUSEWHEEL:
-                camera_->zoom(e.wheel.preciseY);
-                break;
-            case SDL_WINDOWEVENT:
-                if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-                {
-                    sdl_texture_ = std::make_shared<SDLTexture>(
-                        sdl_renderer_,
-                        SDL_TEXTUREACCESS_STREAMING,
-                        e.window.data1,
-                        e.window.data2);
-                    depth.resize(sdl_texture_->getWidth() * sdl_texture_->getHeight());
-                }
-                break;
-            case SDL_CONTROLLERDEVICEADDED:
-                game_controllers_.emplace(e.cdevice.which, std::make_shared<GameController>(e.cdevice.which));
-                break;
-            case SDL_CONTROLLERDEVICEREMOVED:
-                game_controllers_.erase(e.cdevice.which);
-                break;
-            default:
-                break;
-            }
-        }
-
-        {
-            glm::dvec2 left_stick(0.0);
-            glm::dvec2 right_stick(0.0);
-            double pan_z = 0.0;
-
-            for (const auto& game_controller : game_controllers_)
-            {
-                const auto& a = game_controller.second;
-
-                double z =
-                    (a->getButton(SDL_CONTROLLER_BUTTON_A) ? 1.0 : 0.0) -
-                    (a->getButton(SDL_CONTROLLER_BUTTON_B) ? 1.0 : 0.0);
-                pan_z = glm::abs(z) > glm::abs(pan_z) ? z : pan_z;
-
-                glm::dvec2 l(0.0);
-                l.x = a->getAxis(SDL_CONTROLLER_AXIS_LEFTX);
-                l.y = a->getAxis(SDL_CONTROLLER_AXIS_LEFTY);
-                if (glm::length(l) > 0.1)
-                    left_stick += l;
-
-                glm::dvec2 r(0.0);
-                r.x = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTX);
-                r.y = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTY);
-                if (glm::length(r) > 0.1)
-                    right_stick += r;
-            }
-
-            if (glm::length(left_stick) > 1.0)
-                left_stick = glm::normalize(left_stick);
-            if (glm::length(right_stick) > 1.0)
-                right_stick = glm::normalize(right_stick);
-
-            camera_->rotate(right_stick.x * 8.0, right_stick.y * 8.0);
-            camera_->pan(-left_stick.x * 8.0, pan_z * 8.0);
-            camera_->zoom(-left_stick.y / 8.0);
-        }
+        handleEvents();
 
         sdl_texture_->clear();
 
-        int width = sdl_texture_->getWidth();
-        int height = sdl_texture_->getHeight();
-        unsigned char* pixels = sdl_texture_->getPixels();
+        auto [width, height] = sdl_renderer_->getResolution();
+        std::span<uint32_t> pixels = sdl_texture_->getPixels();
         auto ai = std::chrono::steady_clock::now();
 
         const glm::dmat4 viewport(
@@ -231,8 +160,7 @@ void App::run(const std::vector<std::string> &args)
         current *= camera_->get();
         current.clip(projection, viewport);
 
-        for (auto& d : depth)
-            d = std::numeric_limits<double>::max();
+        std::fill(depth_.begin(), depth_.end(), std::numeric_limits<double>::max());
 
         int triangle_count = current.getIndices().size() / 3;
         for (int i = 0; i < triangle_count; i++)
@@ -246,34 +174,39 @@ void App::run(const std::vector<std::string> &args)
                 a,
                 b,
                 c,
-                [width, height, pixels, i, &depth, &n](int x, int y, double z)
+                [&](int x, int y, double z)
                 {
-                    if (z <= depth[x + y * width])
+                    if (z <= depth_[x + y * width])
                     {
-                        depth[x + y * width] = z;
+                        depth_[x + y * width] = z;
                         y = height - 1 - y;
-                        int idx = 4 * (x + y * width);
+                        int idx = x + y * width;
                         double l = glm::mix(
                             0.2,
                             1.0,
                             glm::max(0.0, glm::dot(n, glm::dvec3(0.0, 0.0, 1.0))));
+
+                        unsigned char v = 255 * l;
+
                         /*
-                        pixels[idx + 1] = ((i + 0) % 3) == 0 ? 255 * l : 0;
-                        pixels[idx + 2] = ((i + 1) % 3) == 0 ? 255 * l : 0;
-                        pixels[idx + 3] = ((i + 2) % 3) == 0 ? 255 * l : 0;
+                        pixels[idx] = SDLTexture::Color
+                        {
+                            ((i + 0) % 3) == 0 ? v : 0,
+                            ((i + 1) % 3) == 0 ? v : 0,
+                            ((i + 2) % 3) == 0 ? v : 0
+                        };
                         */
-                        pixels[idx + 1] = 255 * l;
-                        pixels[idx + 2] = 255 * l;
-                        pixels[idx + 3] = 255 * l;
+                        
+                        pixels[idx] = SDLTexture::Color{ v, v, v, 255 };
                     }
                 });
         }
 
         auto bi = std::chrono::steady_clock::now();
 
-        sdl_texture_->updateTexture();
-        sdl_renderer_->renderCopy(sdl_texture_);
-        sdl_renderer_->renderPresent();
+        sdl_texture_->update();
+        sdl_renderer_->copy(sdl_texture_);
+        sdl_renderer_->present();
 
         const int MIN_FRAME = 1;
         int frame_end = SDL_GetTicks();
@@ -282,30 +215,96 @@ void App::run(const std::vector<std::string> &args)
         ellapsed += frame_delay;
 
         frame_count++;
-
-        /*
-        sdl_window_->setWindowTitle(
-            std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(bi - ai).count() / 1000.0));
-        */
     }
 }
 
-void App::init()
+void App::handleEvents()
 {
-    int result;
-    result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER);
-    if (result)
+    SDL_Event e;
+
+    while (SDL_PollEvent(&e))
     {
-        LOG_ERROR << "Failure in SDL_Init. (" << SDL_GetError() << ")" << std::endl;
-        throw std::exception();
+        for (auto& game_controller : game_controllers_)
+            game_controller.second->handleEvent(e);
+
+        switch (e.type)
+        {
+        case SDL_QUIT:
+            run_ = false;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            mouse_button_ = e.button.button;
+            break;
+        case SDL_MOUSEBUTTONUP:
+            mouse_button_ = 0;
+            break;
+        case SDL_MOUSEMOTION:
+            if (mouse_button_ == 3)
+                camera_->rotate(e.motion.xrel, e.motion.yrel);
+            else if (mouse_button_ == 2)
+                camera_->pan(e.motion.xrel, e.motion.yrel);
+            break;
+        case SDL_MOUSEWHEEL:
+            camera_->zoom(e.wheel.preciseY);
+            break;
+        case SDL_WINDOWEVENT:
+            if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+            {
+                auto [width, height] = sdl_renderer_->getResolution();
+
+                sdl_texture_ = std::make_shared<SDLTexture>(
+                    sdl_renderer_,
+                    width,
+                    height);
+                depth_.resize(width, height);
+            }
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+            game_controllers_.emplace(e.cdevice.which, std::make_shared<GameController>(e.cdevice.which));
+            break;
+        case SDL_CONTROLLERDEVICEREMOVED:
+            game_controllers_.erase(e.cdevice.which);
+            break;
+        default:
+            break;
+        }
     }
-    sdl_window_ = std::make_shared<SDLWindow>("sw-renderer");
-    sdl_renderer_ = std::make_shared<SDLRenderer>(sdl_window_);
-    sdl_texture_ = std::make_shared<SDLTexture>(
-        sdl_renderer_,
-        SDL_TEXTUREACCESS_STREAMING,
-        sdl_window_->getDefaultResolution().first,
-        sdl_window_->getDefaultResolution().second);
-    camera_ = std::make_shared<Camera>(20.0, 0.1, 400.0);
+
+    {
+        glm::dvec2 left_stick(0.0);
+        glm::dvec2 right_stick(0.0);
+        double pan_z = 0.0;
+
+        for (const auto& game_controller : game_controllers_)
+        {
+            const auto& a = game_controller.second;
+
+            double z =
+                (a->getButton(SDL_CONTROLLER_BUTTON_A) ? 1.0 : 0.0) -
+                (a->getButton(SDL_CONTROLLER_BUTTON_B) ? 1.0 : 0.0);
+            pan_z = glm::abs(z) > glm::abs(pan_z) ? z : pan_z;
+
+            glm::dvec2 l(0.0);
+            l.x = a->getAxis(SDL_CONTROLLER_AXIS_LEFTX);
+            l.y = a->getAxis(SDL_CONTROLLER_AXIS_LEFTY);
+            if (glm::length(l) > 0.1)
+                left_stick += l;
+
+            glm::dvec2 r(0.0);
+            r.x = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTX);
+            r.y = a->getAxis(SDL_CONTROLLER_AXIS_RIGHTY);
+            if (glm::length(r) > 0.1)
+                right_stick += r;
+        }
+
+        if (glm::length(left_stick) > 1.0)
+            left_stick = glm::normalize(left_stick);
+        if (glm::length(right_stick) > 1.0)
+            right_stick = glm::normalize(right_stick);
+
+        camera_->rotate(right_stick.x * 8.0, right_stick.y * 8.0);
+        camera_->pan(-left_stick.x * 8.0, pan_z * 8.0);
+        camera_->zoom(-left_stick.y / 8.0);
+    }
 }
 

@@ -1,5 +1,9 @@
 #include "sdltexture.hpp"
 
+#include <ranges>
+
+#include <SDL_render.h>
+
 #include "sdlrenderer.hpp"
 
 #define LOG_MODULE_NAME ("SDLTexture")
@@ -7,20 +11,20 @@
 
 SDLTexture::SDLTexture(
     const std::shared_ptr<SDLRenderer> &sdl_renderer,
-    SDL_TextureAccess access,
     int width,
-    int height)
-    :
+    int height,
+    uint32_t clear_color) :
         width_(width),
-        height_(height),
-        pixels_(nullptr)
+        clear_color_(clear_color),
+        pixels_(width * height, clear_color),
+        sdl_texture_(nullptr)
 {
     LOG_INFO << "Instance created." << std::endl;
 
     sdl_texture_ = SDL_CreateTexture(
         sdl_renderer->get(),
         SDL_PIXELFORMAT_RGBA8888,
-        access,
+        SDL_TEXTUREACCESS_STATIC,
         width,
         height);
 
@@ -29,50 +33,21 @@ SDLTexture::SDLTexture(
         LOG_ERROR << "Failure in SDL_CreateTexture. (" << SDL_GetError() << ")" << std::endl;
         throw std::exception();
     }
-
-    pixels_ = new unsigned char[4 * (size_t)width * (size_t)height]();
 }
 
 SDLTexture::~SDLTexture()
 {
-    if (pixels_)
-        delete[] pixels_;
-
     if (sdl_texture_)
         SDL_DestroyTexture(sdl_texture_);
 }
 
-SDL_Texture *SDLTexture::get() const
+void SDLTexture::update()
 {
-    return sdl_texture_;
-}
-
-void SDLTexture::updateTexture()
-{
-    SDL_UpdateTexture(
-        sdl_texture_,
-        nullptr,
-        pixels_,
-        4 * width_);
-}
-
-unsigned char *SDLTexture::getPixels() const
-{
-    return pixels_;
-}
-
-int SDLTexture::getWidth() const
-{
-    return width_;
-}
-
-int SDLTexture::getHeight() const
-{
-    return height_;
+    SDL_UpdateTexture(sdl_texture_, nullptr, pixels_.data(), 4 * width_);
 }
 
 void SDLTexture::clear()
 {
-    memset(pixels_, 0, 4 * width_ * height_ * sizeof(char));
+    std::ranges::fill(pixels_, clear_color_);
 }
 

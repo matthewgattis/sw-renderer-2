@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10.2)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR};${CMAKE_MODULE_PATH};")
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(CMAKE_CXX_STANDARD 20)
 
 project(sw-renderer-2 VERSION 1.0.0)
 add_definitions(-D_USE_MATH_DEFINES)

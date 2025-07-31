@@ -11,9 +11,7 @@ public:
     ~GameController();
 
     void handleEvent(const SDL_Event& e);
-
     bool getButton(SDL_GameControllerButton button);
-    
     double getAxis(SDL_GameControllerAxis axis);
 
 private:
