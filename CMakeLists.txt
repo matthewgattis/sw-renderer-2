@@ -23,6 +23,7 @@ set(${PROJECT_NAME}_SOURCE
     ./sdltexture.cpp
     ./sdlwindow.cpp
     ./triangle.cpp
+    ./depthbuffer.cpp
     )
 
 set(${PROJECT_NAME}_INCLUDE
@@ -37,6 +38,7 @@ set(${PROJECT_NAME}_INCLUDE
     ./sdlwindow.hpp
     ./triangle.hpp
     ./teapot.hpp
+    ./depthbuffer.hpp
     )
 
 include_directories(${PROJECT_NAME}

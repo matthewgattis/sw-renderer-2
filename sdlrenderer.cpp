@@ -23,16 +23,6 @@ SDLRenderer::SDLRenderer(const std::shared_ptr<SDLWindow> &sdl_window) :
         LOG_ERROR << "Failure in SDL_CreateRenderer. (" << SDL_GetError() << ")" << std::endl;
         throw std::exception();
     }
-
-    int res;
-    int w, h;
-    res = SDL_GetRendererOutputSize(sdl_renderer_, &w, &h);
-    if (res != 0)
-    {
-        LOG_ERROR << "Failure in SDL_GetRendererOuputSize. (" << SDL_GetError() << ")" << std::endl;
-        throw std::exception();
-    }
-    resolution_ = std::make_pair(w, h);
 }
 
 SDLRenderer::~SDLRenderer()

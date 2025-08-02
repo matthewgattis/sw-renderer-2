@@ -1,6 +1,5 @@
 #include "camera.hpp"
 
-#include <cmath>
 #include <algorithm>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -38,7 +37,7 @@ void Camera::pan(double x, double y)
 	view_matrix_ =
 		glm::translate(
 			IDENTITY,
-			PAN_SPEED * distance_ * glm::dvec3(x, -y, 0.0)) *
+			PAN_SPEED * distance_ * glm::dvec3(x, y, 0.0)) *
 		view_matrix_;
 }
 

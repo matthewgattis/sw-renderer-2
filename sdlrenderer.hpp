@@ -24,7 +24,5 @@ public:
 
 private:
     SDL_Renderer *sdl_renderer_;
-
-    std::pair<int, int> resolution_;
 };
 
